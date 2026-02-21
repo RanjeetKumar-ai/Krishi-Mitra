@@ -4,7 +4,6 @@ import 'package:krishimitra_ai/core/constants/app_colors.dart';
 import 'package:krishimitra_ai/core/constants/app_strings.dart';
 import 'package:krishimitra_ai/presentation/pages/home/home_page.dart';
 import 'services/localization/tts_service.dart';
-import 'services/localization/tts_languages.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +18,8 @@ void main() async {
 
   // Setup dependency injection
   // await setupServiceLocator();
-  await TtsService.instance.init(language: TtsLanguages.enIN);
+  WidgetsFlutterBinding.ensureInitialized();
+  await TtsService.instance.init();
   runApp(const KrishiMitraApp());
 }
 

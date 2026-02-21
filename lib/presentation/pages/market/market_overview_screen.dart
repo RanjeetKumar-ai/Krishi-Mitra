@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../services/localization/tts_service.dart';
 import '../../../services/localization/tts_languages.dart';
-import '../../widgets/common/tts_language_sheet.dart';
 
 // ==================== DATA MODELS (Same as before) ====================
 
@@ -340,10 +339,7 @@ class _MarketOverviewScreenState extends State<MarketOverviewScreen>
   }
 
   // ==================== APP BAR ====================
-// ✅ TTS: Enhanced app bar with language switcher
   Widget _buildAppBar(BuildContext context) {
-    final tts = TtsService.instance;
-
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -415,32 +411,6 @@ class _MarketOverviewScreenState extends State<MarketOverviewScreen>
             ),
           ),
 
-          // ✅ TTS: Language switcher (EN/HI)
-          ValueListenableBuilder<bool>(
-            valueListenable: tts.isSpeaking,
-            builder: (_, __, ___) {
-              final isHindi = tts.currentLanguage == TtsLanguages.hiIN;
-              return GestureDetector(
-                onTap: () => showTtsLanguageSheet(context),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    isHindi ? "HI" : "EN",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
           const SizedBox(width: 8),
 
           // ✅ TTS: Voice summary button (now functional)

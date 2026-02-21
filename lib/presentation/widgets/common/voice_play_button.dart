@@ -1,58 +1,84 @@
+// lib/features/common/voice_play_button.dart
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../../core/constants/app_colors.dart';
 import '../../../services/localization/tts_service.dart';
 
+/// A self-contained play/stop voice button.
+///
+/// Each instance has a unique [speakId] so only the tapped card shows
+/// as "speaking" — no cross-card bleed.
 class VoicePlayButton extends StatelessWidget {
+  /// The text to speak when tapped.
   final String speakText;
-  final String? languageCode;
+
+  /// Unique identifier for this button instance.
+  /// Defaults to the speakText itself, but pass an explicit ID
+  /// (e.g. task.id) to guarantee uniqueness.
+  final String? speakId;
+
+  /// Icon size. Defaults to 20.
+  final double iconSize;
+
+  /// Container size. Defaults to 32.
+  final double size;
 
   const VoicePlayButton({
     super.key,
     required this.speakText,
-    this.languageCode,
+    this.speakId,
+    this.iconSize = 20,
+    this.size = 32,
   });
+
+  String get _id => speakId ?? speakText;
 
   @override
   Widget build(BuildContext context) {
-    final tts = TtsService.instance;
+    // Listen to currentSpeakId — only rebuild THIS widget when its
+    // ownership changes, not when any other widget speaks.
+    return ValueListenableBuilder<String?>(
+      valueListenable: TtsService.instance.currentSpeakId,
+      builder: (context, activeId, _) {
+        final isThisSpeaking = activeId == _id;
 
-    return ValueListenableBuilder<bool>(
-      valueListenable: tts.isSpeaking,
-      builder: (_, speaking, __) {
-        return InkWell(
-          borderRadius: BorderRadius.circular(999),
+        return GestureDetector(
           onTap: () async {
             HapticFeedback.lightImpact();
-            if (speaking) {
-              await tts.stop();
+            if (isThisSpeaking) {
+              await TtsService.instance.stop();
             } else {
-              await tts.speak(speakText, languageCode: languageCode);
+              await TtsService.instance.speak(
+                speakText,
+                speakId: _id,
+              );
             }
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: size,
+            height: size,
             decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(999),
+              color: isThisSpeaking
+                  ? AppColors.primaryGreen.withValues(alpha: (0.15))
+                  : AppColors.primaryGreen.withValues(alpha: (0.08)),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isThisSpeaking
+                    ? AppColors.primaryGreen
+                    : AppColors.primaryGreen.withValues(alpha: (0.3)),
+                width: isThisSpeaking ? 1.8 : 1.2,
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  speaking ? Icons.stop_circle_outlined : Icons.volume_up,
-                  size: 16,
-                  color: const Color(0xFF2E7D32),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  speaking ? "Stop" : "Listen",
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ),
-              ],
+            child: Center(
+              child: Icon(
+                isThisSpeaking ? Icons.stop_rounded : Icons.volume_up_rounded,
+                size: iconSize,
+                color: AppColors.primaryGreen,
+              ),
             ),
           ),
         );

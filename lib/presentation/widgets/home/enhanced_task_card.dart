@@ -1,12 +1,13 @@
-/// Enhanced Task Card Widget
-/// Farmer-optimized task display with voice, completion states, and urgency
+// lib/features/widgets/tasks/enhanced_task_card.dart
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/task_model.dart';
 import '../common/voice_play_button.dart';
+import '../../../services/localization/tts_service.dart';
 
 class EnhancedTaskCard extends StatefulWidget {
   final TaskModel task;
@@ -28,7 +29,7 @@ class EnhancedTaskCard extends StatefulWidget {
 
 class _EnhancedTaskCardState extends State<EnhancedTaskCard>
     with SingleTickerProviderStateMixin {
-  late AnimationController _completionController;
+  late final AnimationController _completionController;
   bool _showConfetti = false;
 
   @override
@@ -50,16 +51,28 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
     HapticFeedback.heavyImpact();
     setState(() => _showConfetti = true);
     _completionController.forward();
-
-    if (widget.onComplete != null) {
-      widget.onComplete!(widget.task);
-    }
-
+    widget.onComplete?.call(widget.task);
     Future.delayed(const Duration(milliseconds: 800), () {
-      if (mounted) {
-        setState(() => _showConfetti = false);
-      }
+      if (mounted) setState(() => _showConfetti = false);
     });
+  }
+
+  /// Builds language-aware speak text for this task card
+  String get _speakText {
+    final t = widget.task;
+    final dueStr =
+        '${t.dueTime.hour}:${t.dueTime.minute.toString().padLeft(2, '0')}';
+
+    if (TtsService.instance.isHindi) {
+      return '${t.title}. '
+          'फसल: ${t.cropName}. '
+          '${t.isOverdue ? 'यह कार्य समय सीमा पार कर चुका है।' : 'समय सीमा $dueStr बजे।'}'
+          '${t.quantity != null ? ' आवश्यक मात्रा: ${t.quantity}.' : ''}';
+    }
+    return '${t.title}. '
+        'Crop: ${t.cropName}. '
+        '${t.isOverdue ? 'This task is overdue.' : 'Due at $dueStr.'}'
+        '${t.quantity != null ? ' Required quantity: ${t.quantity}.' : ''}';
   }
 
   @override
@@ -67,8 +80,6 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
     final isCompleted = widget.task.status == TaskStatus.completed;
     final isOverdue = widget.task.isOverdue && !isCompleted;
     final isSnoozed = widget.task.status == TaskStatus.snoozed;
-
-    // Calculate urgency
     final hoursUntilDue =
         widget.task.dueTime.difference(DateTime.now()).inHours;
     final isUrgent = hoursUntilDue <= 2 && hoursUntilDue > 0;
@@ -90,7 +101,7 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: isCompleted
-                    ? AppColors.successGreen.withValues(alpha: 0.05)
+                    ? AppColors.successGreen.withValues(alpha: (0.05))
                     : AppColors.backgroundCard,
                 border: Border.all(
                   color: isOverdue
@@ -104,7 +115,7 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                 boxShadow: isOverdue
                     ? [
                         BoxShadow(
-                          color: AppColors.errorRed.withValues(alpha: 0.2),
+                          color: AppColors.errorRed.withValues(alpha: (0.2)),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         )
@@ -116,9 +127,9 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                 children: [
                   Row(
                     children: [
-                      // Number Badge
+                      // Number / Check badge
                       ScaleTransition(
-                        scale: Tween<double>(begin: 1.0, end: 1.3).animate(
+                        scale: Tween(begin: 1.0, end: 1.3).animate(
                           CurvedAnimation(
                             parent: _completionController,
                             curve: Curves.elasticOut,
@@ -137,11 +148,8 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                           ),
                           child: Center(
                             child: isCompleted
-                                ? const Icon(
-                                    Icons.check,
-                                    color: AppColors.white,
-                                    size: 28,
-                                  )
+                                ? const Icon(Icons.check,
+                                    color: AppColors.white, size: 28)
                                 : Text(
                                     '${widget.number}',
                                     style: Theme.of(context)
@@ -157,12 +165,11 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                       ),
                       const SizedBox(width: 12),
 
-                      // Content
+                      // Title + crop + time badges
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Title
                             Text(
                               widget.task.title,
                               style: Theme.of(context)
@@ -178,15 +185,10 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
-
-                            // Crop Info
                             Row(
                               children: [
-                                const Icon(
-                                  Icons.local_florist,
-                                  size: 14,
-                                  color: AppColors.textSecondary,
-                                ),
+                                const Icon(Icons.local_florist,
+                                    size: 14, color: AppColors.textSecondary),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${widget.task.cropName} - ${widget.task.fieldSizeText}',
@@ -194,123 +196,57 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                                       .textTheme
                                       .bodySmall
                                       ?.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
+                                          color: AppColors.textSecondary),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 4),
-
-                            // Time & Status Row
                             Wrap(
                               spacing: 8,
                               runSpacing: 4,
                               children: [
-                                // Due Time
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isOverdue
-                                        ? AppColors.errorRed
-                                            .withValues(alpha: 0.1)
-                                        : AppColors.primaryGreen
-                                            .withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        isOverdue
-                                            ? Icons.warning
-                                            : Icons.access_time,
-                                        size: 12,
-                                        color: isOverdue
-                                            ? AppColors.errorRed
-                                            : AppColors.primaryGreen,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        isOverdue
-                                            ? 'OVERDUE'
-                                            : 'Due ${widget.task.dueTime.hour}:${widget.task.dueTime.minute.toString().padLeft(2, '0')}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: isOverdue
-                                                  ? AppColors.errorRed
-                                                  : AppColors.primaryGreen,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 11,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                // Urgency Badge
+                                _buildTimeBadge(context, isOverdue),
                                 if (isUrgent && !isCompleted && !isOverdue)
                                   _buildUrgencyBadge(
-                                    context,
-                                    'URGENT',
-                                    AppColors.errorRed,
-                                  ),
+                                      context, 'URGENT', AppColors.errorRed),
                                 if (isDueSoon && !isCompleted && !isOverdue)
-                                  _buildUrgencyBadge(
-                                    context,
-                                    'DUE SOON',
-                                    AppColors.warningOrange,
-                                  ),
-
-                                // Snoozed Badge
+                                  _buildUrgencyBadge(context, 'DUE SOON',
+                                      AppColors.warningOrange),
                                 if (isSnoozed)
                                   _buildUrgencyBadge(
-                                    context,
-                                    'SNOOZED',
-                                    AppColors.mediumGray,
-                                  ),
+                                      context, 'SNOOZED', AppColors.mediumGray),
                               ],
                             ),
                           ],
                         ),
                       ),
-
                       const SizedBox(width: 8),
 
-                      // Action Icons
+                      // ── ACTION COLUMN ──────────────────────────────
                       Column(
                         children: [
-                          // Voice Button
+                          // ✅ FIX: Pass task.id as speakId — each card is isolated
                           VoicePlayButton(
-                            speakText:
-                                '${widget.task.title}. ${widget.task.cropName}. Due at ${widget.task.dueTime.hour}:${widget.task.dueTime.minute.toString().padLeft(2, '0')}',
+                            speakText: _speakText,
+                            speakId: 'task_card_${widget.task.id}',
                           ),
                           const SizedBox(height: 8),
-
-                          // Complete Button (if not completed)
                           if (!isCompleted)
                             GestureDetector(
                               onTap: _markComplete,
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: AppColors.successGreen
-                                      .withValues(alpha: 0.1),
+                                  color:
+                                      AppColors.successGreen.withValues(alpha: (0.1)),
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: AppColors.successGreen,
                                     width: 1.5,
                                   ),
                                 ),
-                                child: const Icon(
-                                  Icons.check,
-                                  color: AppColors.successGreen,
-                                  size: 16,
-                                ),
+                                child: const Icon(Icons.check,
+                                    color: AppColors.successGreen, size: 16),
                               ),
                             ),
                         ],
@@ -318,28 +254,24 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                     ],
                   ),
 
-                  // Quantity Info (if available)
+                  // Quantity row
                   if (widget.task.quantity != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 12),
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.accentYellow.withValues(alpha: 0.1),
+                          color: AppColors.accentYellow.withValues(alpha: (0.1)),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color:
-                                AppColors.accentYellow.withValues(alpha: 0.3),
+                            color: AppColors.accentYellow.withValues(alpha: (0.3)),
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.scale,
-                              size: 16,
-                              color: AppColors.accentYellow,
-                            ),
+                            const Icon(Icons.scale,
+                                size: 16, color: AppColors.accentYellow),
                             const SizedBox(width: 6),
                             Text(
                               widget.task.quantity!,
@@ -359,7 +291,7 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
               ),
             ),
 
-            // Confetti Effect
+            // Confetti overlay
             if (_showConfetti)
               Positioned.fill(
                 child: IgnorePointer(
@@ -368,7 +300,7 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
                       borderRadius: BorderRadius.circular(12),
                       gradient: RadialGradient(
                         colors: [
-                          AppColors.successGreen.withValues(alpha: 0.3),
+                          AppColors.successGreen.withValues(alpha: (0.3)),
                           Colors.transparent,
                         ],
                       ),
@@ -382,13 +314,47 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
     );
   }
 
+  Widget _buildTimeBadge(BuildContext context, bool isOverdue) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isOverdue
+            ? AppColors.errorRed.withValues(alpha: (0.1))
+            : AppColors.primaryGreen.withValues(alpha: (0.1)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isOverdue ? Icons.warning : Icons.access_time,
+            size: 12,
+            color: isOverdue ? AppColors.errorRed : AppColors.primaryGreen,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isOverdue
+                ? 'OVERDUE'
+                : 'Due ${widget.task.dueTime.hour}:${widget.task.dueTime.minute.toString().padLeft(2, '0')}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color:
+                      isOverdue ? AppColors.errorRed : AppColors.primaryGreen,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUrgencyBadge(BuildContext context, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
+        color: color.withValues(alpha: (0.15)),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+        border: Border.all(color: color.withValues(alpha: (0.5)), width: 1),
       ),
       child: Text(
         label,
@@ -414,9 +380,10 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
           children: [
             Text(
               'Quick Actions',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -431,10 +398,7 @@ class _EnhancedTaskCardState extends State<EnhancedTaskCard>
             ListTile(
               leading: const Icon(Icons.snooze, color: AppColors.warningOrange),
               title: const Text('Snooze for 24 Hours'),
-              onTap: () {
-                Navigator.pop(context);
-                // Handle snooze
-              },
+              onTap: () => Navigator.pop(context),
             ),
             ListTile(
               leading: const Icon(Icons.info, color: AppColors.accentBlue),

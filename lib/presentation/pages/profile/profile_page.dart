@@ -1,12 +1,18 @@
-/// Profile & Settings Screen - REDESIGNED
-/// Safety-first, farmer-friendly, calm farm-themed header
+// lib/features/pages/profile/profile_page.dart
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../pages/safety/sos_page.dart';
+import '../../../services/localization/tts_service.dart';
+import '../../../services/localization/tts_languages.dart';
+
+// ═══════════════════════════════════════════════════════════════════
+//  ProfilePage
+// ═══════════════════════════════════════════════════════════════════
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,10 +23,15 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage>
     with TickerProviderStateMixin {
-  late AnimationController _sosBreathController;
+  late final AnimationController _sosBreathController;
 
-  // Accordion expansion states
+  /// Which accordion panel is open (null = all closed)
   String? _expandedGroup;
+
+  /// Tracks which language is currently selected — mirrors TtsService
+  String _selectedLangCode = TtsService.instance.currentLanguage;
+
+  // ─── Lifecycle ────────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -29,6 +40,9 @@ class _ProfilePageState extends State<ProfilePage>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
+
+    // Keep in sync if language was already changed elsewhere
+    _selectedLangCode = TtsService.instance.currentLanguage;
   }
 
   @override
@@ -37,6 +51,20 @@ class _ProfilePageState extends State<ProfilePage>
     super.dispose();
   }
 
+  // ─── Helpers ──────────────────────────────────────────────────────
+
+  /// Returns short display label for the currently selected language
+  String get _langLabel {
+    final match = TtsLanguages.supported.where(
+      (l) => l.code == _selectedLangCode,
+    );
+    return match.isNotEmpty ? match.first.nativeLabel : 'English';
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  BUILD
+  // ═══════════════════════════════════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,22 +72,19 @@ class _ProfilePageState extends State<ProfilePage>
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Section 1: Profile Header - REDESIGNED (Farm-themed, calm)
+            // ── 1. Farm-themed header ──────────────────────────────
             _buildFarmThemedHeader(context),
-
             const SizedBox(height: 16),
 
-            // Section 2: Emergency Help Card (FIXED navigation)
+            // ── 2. Emergency SOS card ──────────────────────────────
             _buildEmergencyHelpCard(context),
-
             const SizedBox(height: 20),
 
-            // Section 3: Farm Management (Simple cards)
+            // ── 3. Farm management quick cards ────────────────────
             _buildFarmManagementCards(context),
-
             const SizedBox(height: 20),
 
-            // Section 4: Expandable Settings Groups
+            // ── 4. Accordion: Account ──────────────────────────────
             _buildExpandableGroup(
               context,
               groupKey: 'account',
@@ -69,68 +94,27 @@ class _ProfilePageState extends State<ProfilePage>
                 _SettingItem(
                   icon: Icons.edit,
                   title: 'Edit Profile',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Navigate to edit profile
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
                 _SettingItem(
                   icon: Icons.phone,
                   title: 'Change Phone Number',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Navigate to change phone
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
                 _SettingItem(
                   icon: Icons.lock,
                   title: 'Privacy Settings',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Navigate to privacy settings
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
 
-            _buildExpandableGroup(
-              context,
-              groupKey: 'preferences',
-              title: 'Preferences',
-              icon: Icons.tune,
-              items: [
-                _SettingItem(
-                  icon: Icons.language,
-                  title: 'Language',
-                  trailing: 'English',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Show language picker
-                  },
-                ),
-                _SettingItem(
-                  icon: Icons.notifications,
-                  title: 'Notifications',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Navigate to notifications settings
-                  },
-                ),
-                _SettingItem(
-                  icon: Icons.volume_up,
-                  title: 'Voice Guidance',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Navigate to voice settings
-                  },
-                ),
-              ],
-            ),
-
+            // ── 5. Accordion: Preferences (Language lives here) ────
+            _buildPreferencesGroup(context),
             const SizedBox(height: 12),
 
+            // ── 6. Accordion: Support ──────────────────────────────
             _buildExpandableGroup(
               context,
               groupKey: 'support',
@@ -140,40 +124,28 @@ class _ProfilePageState extends State<ProfilePage>
                 _SettingItem(
                   icon: Icons.help,
                   title: 'Help & FAQ',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Navigate to help
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
                 _SettingItem(
                   icon: Icons.contact_support,
                   title: 'Contact Support',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showContactSupport(context);
-                  },
+                  onTap: () => _showContactSupport(context),
                 ),
                 _SettingItem(
                   icon: Icons.feedback,
                   title: 'Send Feedback',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Navigate to feedback
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
                 _SettingItem(
                   icon: Icons.star,
                   title: 'Rate App',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Launch Play Store rating
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
 
+            // ── 7. Accordion: About ────────────────────────────────
             _buildExpandableGroup(
               context,
               groupKey: 'about',
@@ -189,25 +161,18 @@ class _ProfilePageState extends State<ProfilePage>
                 _SettingItem(
                   icon: Icons.description,
                   title: 'Terms & Conditions',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Show terms
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
                 _SettingItem(
                   icon: Icons.privacy_tip,
                   title: 'Privacy Policy',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    // TODO: Show privacy policy
-                  },
+                  onTap: () => HapticFeedback.lightImpact(),
                 ),
               ],
             ),
-
             const SizedBox(height: 24),
 
-            // Logout Button
+            // ── 8. Logout ──────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: SizedBox(
@@ -215,6 +180,7 @@ class _ProfilePageState extends State<ProfilePage>
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.errorRed,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -232,19 +198,21 @@ class _ProfilePageState extends State<ProfilePage>
                 ),
               ),
             ),
-
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  // ==================== SECTION 1: FARM-THEMED HEADER (REDESIGNED) ====================
+  // ═══════════════════════════════════════════════════════════════════
+  //  SECTION 1 — FARM HEADER
+  // ═══════════════════════════════════════════════════════════════════
+
   Widget _buildFarmThemedHeader(BuildContext context) {
     return Stack(
       children: [
-        // Background with subtle farm pattern
+        // Gradient bg
         Container(
           height: 200,
           width: double.infinity,
@@ -253,16 +221,15 @@ class _ProfilePageState extends State<ProfilePage>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                const Color(0xFF6BA368), // Calm farm green
+                const Color(0xFF6BA368),
                 const Color(0xFF7FB57D),
                 const Color(0xFFF8F9FA).withValues(alpha: (0.9)),
               ],
-              stops: const [0.0, 0.5, 1.0],
+              stops: const [0.0, 0.55, 1.0],
             ),
           ),
         ),
-
-        // Farm field pattern (subtle)
+        // Subtle overlay
         Positioned(
           top: 0,
           left: 0,
@@ -281,14 +248,12 @@ class _ProfilePageState extends State<ProfilePage>
             ),
           ),
         ),
-
-        // Content
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
               children: [
-                // Title and Settings Row
+                // Title row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -307,18 +272,14 @@ class _ProfilePageState extends State<ProfilePage>
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.settings, color: Colors.white),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          // Settings already on this page
-                        },
+                        onPressed: () => HapticFeedback.lightImpact(),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
 
-                // Profile Info Card (compact, calm)
+                // Profile card
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -334,21 +295,17 @@ class _ProfilePageState extends State<ProfilePage>
                   ),
                   child: Row(
                     children: [
-                      // Avatar with farmer icon
+                      // Avatar
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFF6BA368),
-                              const Color(0xFF7FB57D),
-                            ],
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF6BA368), Color(0xFF7FB57D)],
                           ),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF6BA368)
-                                  .withValues(alpha: (0.3)),
+                              color: const Color(0xFF6BA368).withValues(alpha: (0.3)),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -360,10 +317,9 @@ class _ProfilePageState extends State<ProfilePage>
                           size: 32,
                         ),
                       ),
-
                       const SizedBox(width: 14),
 
-                      // Farmer Info
+                      // Info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -381,11 +337,8 @@ class _ProfilePageState extends State<ProfilePage>
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(
-                                  Icons.phone,
-                                  size: 14,
-                                  color: Colors.grey[600],
-                                ),
+                                Icon(Icons.phone,
+                                    size: 14, color: Colors.grey[600]),
                                 const SizedBox(width: 4),
                                 Text(
                                   '+91 98765 43210',
@@ -399,11 +352,8 @@ class _ProfilePageState extends State<ProfilePage>
                             const SizedBox(height: 2),
                             Row(
                               children: [
-                                Icon(
-                                  Icons.location_on,
-                                  size: 14,
-                                  color: Colors.grey[600],
-                                ),
+                                Icon(Icons.location_on,
+                                    size: 14, color: Colors.grey[600]),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Hyderabad, Telangana',
@@ -418,17 +368,16 @@ class _ProfilePageState extends State<ProfilePage>
                         ),
                       ),
 
-                      // Edit button
+                      // Edit icon
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color:
-                              const Color(0xFF6BA368).withValues(alpha: (0.1)),
+                          color: const Color(0xFF6BA368).withValues(alpha: (0.1)),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.edit,
-                          color: const Color(0xFF6BA368),
+                          color: Color(0xFF6BA368),
                           size: 20,
                         ),
                       ),
@@ -443,7 +392,10 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  // ==================== SECTION 2: EMERGENCY HELP CARD (FIXED NAVIGATION) ====================
+  // ═══════════════════════════════════════════════════════════════════
+  //  SECTION 2 — EMERGENCY SOS
+  // ═══════════════════════════════════════════════════════════════════
+
   Widget _buildEmergencyHelpCard(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -460,105 +412,88 @@ class _ProfilePageState extends State<ProfilePage>
           child: AnimatedBuilder(
             animation: _sosBreathController,
             builder: (context, child) {
-              final breathValue = _sosBreathController.value;
+              final v = _sosBreathController.value;
               return Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFFF6B6B).withValues(alpha: (0.9)),
-                      const Color(0xFFFF8E53).withValues(alpha: (0.9)),
-                    ],
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF6B6B)
-                          .withValues(alpha: (0.2 + breathValue * 0.15)),
-                      blurRadius: 12 + breathValue * 6,
-                      spreadRadius: 2 + breathValue * 2,
+                      color:
+                          const Color(0xFFFF6B6B).withValues(alpha: (0.2 + v * 0.15)),
+                      blurRadius: 12 + v * 6,
+                      spreadRadius: 2 + v * 2,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: Row(
-                  children: [
-                    // Shield Icon
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: (0.25)),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.shield,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // Content
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Emergency Help',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Quick help during floods, storms, or accidents',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color: Colors.white.withValues(alpha: (0.95)),
-                                  fontSize: 13,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(width: 12),
-
-                    // Arrow
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: (0.3)),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ],
-                ),
+                child: child,
               );
             },
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: (0.25)),
+                    shape: BoxShape.circle,
+                  ),
+                  child:
+                      const Icon(Icons.shield, color: Colors.white, size: 32),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Emergency Help',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Quick help during floods, storms, or accidents',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: (0.95)),
+                          fontSize: 13,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: (0.3)),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.arrow_forward,
+                      color: Colors.white, size: 20),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ==================== SECTION 3: FARM MANAGEMENT CARDS ====================
+  // ═══════════════════════════════════════════════════════════════════
+  //  SECTION 3 — FARM MANAGEMENT CARDS
+  // ═══════════════════════════════════════════════════════════════════
+
   Widget _buildFarmManagementCards(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -580,27 +515,21 @@ class _ProfilePageState extends State<ProfilePage>
             context,
             icon: Icons.local_florist,
             title: 'My Farms',
-            onTap: () {
-              // TODO: Navigate to farms list
-            },
+            onTap: () {},
           ),
           const SizedBox(height: 10),
           _buildSimpleCard(
             context,
             icon: Icons.history,
             title: 'Activity History',
-            onTap: () {
-              // TODO: Navigate to activity history
-            },
+            onTap: () {},
           ),
           const SizedBox(height: 10),
           _buildSimpleCard(
             context,
             icon: Icons.cloud_download,
             title: 'Offline Data',
-            onTap: () {
-              // TODO: Navigate to offline data management
-            },
+            onTap: () {},
           ),
         ],
       ),
@@ -646,15 +575,123 @@ class _ProfilePageState extends State<ProfilePage>
             Expanded(
               child: Text(
                 title,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.textSecondary,
+            const Icon(Icons.arrow_forward_ios,
+                size: 16, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  SECTION 4 — PREFERENCES (with live language selector)
+  // ═══════════════════════════════════════════════════════════════════
+
+  Widget _buildPreferencesGroup(BuildContext context) {
+    final isExpanded = _expandedGroup == 'preferences';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isExpanded
+                ? AppColors.primaryGreen.withValues(alpha: (0.3))
+                : Colors.black.withValues(alpha: (0.06)),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: (0.04)),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Header row
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _expandedGroup = isExpanded ? null : 'preferences';
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryGreen.withValues(alpha: (0.12)),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.tune,
+                          color: AppColors.primaryGreen, size: 22),
+                    ),
+                    const SizedBox(width: 14),
+                    const Expanded(
+                      child: Text(
+                        'Preferences',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: const Icon(Icons.keyboard_arrow_down,
+                          color: AppColors.textSecondary, size: 26),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Expanded content
+            AnimatedCrossFade(
+              crossFadeState: isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+              sizeCurve: Curves.easeInOut,
+              firstChild: const SizedBox.shrink(),
+              secondChild: Column(
+                children: [
+                  const Divider(height: 1, thickness: 1),
+
+                  // ── LANGUAGE ROW (custom, interactive) ──────────
+                  _buildLanguageRow(context),
+
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+
+                  // ── NOTIFICATIONS ────────────────────────────────
+                  _buildSettingTile(
+                    context,
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifications',
+                    onTap: () => HapticFeedback.lightImpact(),
+                  ),
+
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+
+                  // ── VOICE GUIDANCE (live speaking status) ────────
+                  _buildVoiceGuidanceTile(context),
+                ],
+              ),
             ),
           ],
         ),
@@ -662,7 +699,161 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  // ==================== SECTION 4: EXPANDABLE SETTINGS GROUPS ====================
+  // ─── Language Row ──────────────────────────────────────────────────
+
+  Widget _buildLanguageRow(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showLanguagePicker(context);
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.language, color: AppColors.primaryGreen, size: 22),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Text(
+                'Language / भाषा',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              ),
+            ),
+            // Active language badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withValues(alpha: (0.1)),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primaryGreen.withValues(alpha: (0.4)),
+                  width: 1.2,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🇮🇳', style: TextStyle(fontSize: 13)),
+                  const SizedBox(width: 5),
+                  Text(
+                    _langLabel,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward_ios,
+                size: 14, color: AppColors.textSecondary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Voice Guidance Tile ───────────────────────────────────────────
+
+  Widget _buildVoiceGuidanceTile(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: TtsService.instance.isSpeaking,
+      builder: (_, isSpeaking, __) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(
+                isSpeaking ? Icons.volume_up : Icons.volume_off_outlined,
+                color: isSpeaking
+                    ? AppColors.primaryGreen
+                    : AppColors.textSecondary,
+                size: 22,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Voice Guidance',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      isSpeaking
+                          ? 'Speaking now...'
+                          : 'Tap 🔊 anywhere to listen',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isSpeaking
+                            ? AppColors.primaryGreen
+                            : Colors.grey[500],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isSpeaking)
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    TtsService.instance.stop();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.errorRed.withValues(alpha: (0.1)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.stop_circle_outlined,
+                        color: AppColors.errorRed, size: 20),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ─── Language Picker Bottom Sheet ─────────────────────────────────
+
+  void _showLanguagePicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _LanguagePickerSheet(
+        selectedCode: _selectedLangCode,
+        onSelected: (code) async {
+          HapticFeedback.selectionClick();
+
+          // 1. Update TtsService language
+          await TtsService.instance.setLanguage(code);
+
+          // 2. Reflect in UI
+          setState(() => _selectedLangCode = code);
+
+          // 3. Speak confirmation in newly selected language
+          final isHindi = code == TtsLanguages.hiIN;
+          await TtsService.instance.speak(
+            isHindi
+                ? 'भाषा हिंदी में बदल गई। अब सभी आवाज़ें हिंदी में बजेंगी।'
+                : 'Language changed to English. Voice guidance will now play in English.',
+            languageCode: code,
+          );
+        },
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  GENERIC EXPANDABLE GROUP
+  // ═══════════════════════════════════════════════════════════════════
+
   Widget _buildExpandableGroup(
     BuildContext context, {
     required String groupKey,
@@ -693,7 +884,6 @@ class _ProfilePageState extends State<ProfilePage>
         ),
         child: Column(
           children: [
-            // Header
             InkWell(
               borderRadius: BorderRadius.circular(14),
               onTap: () {
@@ -712,11 +902,8 @@ class _ProfilePageState extends State<ProfilePage>
                         color: AppColors.primaryGreen.withValues(alpha: (0.12)),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(
-                        icon,
-                        color: AppColors.primaryGreen,
-                        size: 22,
-                      ),
+                      child:
+                          Icon(icon, color: AppColors.primaryGreen, size: 22),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -732,18 +919,13 @@ class _ProfilePageState extends State<ProfilePage>
                       turns: isExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
-                      child: Icon(
-                        Icons.keyboard_arrow_down,
-                        color: AppColors.textSecondary,
-                        size: 26,
-                      ),
+                      child: const Icon(Icons.keyboard_arrow_down,
+                          color: AppColors.textSecondary, size: 26),
                     ),
                   ],
                 ),
               ),
             ),
-
-            // Expandable content
             AnimatedCrossFade(
               firstChild: const SizedBox.shrink(),
               secondChild: Column(
@@ -783,7 +965,7 @@ class _ProfilePageState extends State<ProfilePage>
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            if (item.trailing != null)
+            if (item.trailing != null) ...[
               Text(
                 item.trailing!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -791,19 +973,33 @@ class _ProfilePageState extends State<ProfilePage>
                       fontWeight: FontWeight.w600,
                     ),
               ),
-            const SizedBox(width: 8),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: AppColors.textSecondary,
-            ),
+              const SizedBox(width: 8),
+            ],
+            const Icon(Icons.arrow_forward_ios,
+                size: 14, color: AppColors.textSecondary),
           ],
         ),
       ),
     );
   }
 
-  // ==================== CONTACT SUPPORT ====================
+  Widget _buildSettingTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    String? trailing,
+    required VoidCallback onTap,
+  }) {
+    return _buildSettingItemWidget(
+      context,
+      _SettingItem(icon: icon, title: title, trailing: trailing, onTap: onTap),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  //  DIALOGS & SHEETS
+  // ═══════════════════════════════════════════════════════════════════
+
   void _showContactSupport(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -846,7 +1042,6 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  // ==================== LOGOUT DIALOG ====================
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -862,13 +1057,13 @@ class _ProfilePageState extends State<ProfilePage>
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.errorRed,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+                  borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Perform logout (clear user data, navigate to login)
+              // TODO: clear session, navigate to login
             },
             child: const Text('Logout'),
           ),
@@ -877,23 +1072,24 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  // ==================== URL LAUNCHERS ====================
+  // ═══════════════════════════════════════════════════════════════════
+  //  URL LAUNCHERS
+  // ═══════════════════════════════════════════════════════════════════
+
   Future<void> _launchCall(String phoneNumber) async {
     final uri = Uri.parse('tel:$phoneNumber');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
   Future<void> _launchEmail(String email) async {
     final uri = Uri.parse('mailto:$email');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 }
 
-// ==================== HELPER CLASSES ====================
+// ═══════════════════════════════════════════════════════════════════
+//  _SettingItem data class
+// ═══════════════════════════════════════════════════════════════════
 
 class _SettingItem {
   final IconData icon;
@@ -901,10 +1097,248 @@ class _SettingItem {
   final String? trailing;
   final VoidCallback onTap;
 
-  _SettingItem({
+  const _SettingItem({
     required this.icon,
     required this.title,
     this.trailing,
     required this.onTap,
   });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Language Picker Bottom Sheet
+// ═══════════════════════════════════════════════════════════════════
+
+class _LanguagePickerSheet extends StatefulWidget {
+  final String selectedCode;
+  final ValueChanged<String> onSelected;
+
+  const _LanguagePickerSheet({
+    required this.selectedCode,
+    required this.onSelected,
+  });
+
+  @override
+  State<_LanguagePickerSheet> createState() => _LanguagePickerSheetState();
+}
+
+class _LanguagePickerSheetState extends State<_LanguagePickerSheet> {
+  late String _previewCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _previewCode = widget.selectedCode;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: (0.12)),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // Title
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withValues(alpha: (0.12)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.language,
+                      color: AppColors.primaryGreen, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Select Language',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'भाषा चुनें',
+                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1),
+          const SizedBox(height: 8),
+
+          // Language options
+          ...TtsLanguages.supported.map((lang) {
+            final isSelected = lang.code == _previewCode;
+            return GestureDetector(
+              onTap: () {
+                setState(() => _previewCode = lang.code);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primaryGreen.withValues(alpha: (0.07))
+                      : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppColors.primaryGreen
+                        : Colors.grey.shade200,
+                    width: isSelected ? 2 : 1.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(lang.flag, style: const TextStyle(fontSize: 30)),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lang.nativeLabel,
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? AppColors.primaryGreen
+                                  : Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            lang.label,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedScale(
+                      scale: isSelected ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 220),
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+
+          const SizedBox(height: 8),
+
+          // Preview voice button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                side:
+                    const BorderSide(color: AppColors.primaryGreen, width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                minimumSize: const Size(double.infinity, 0),
+              ),
+              icon: const Icon(Icons.play_circle_outline,
+                  color: AppColors.primaryGreen),
+              label: Text(
+                _previewCode == TtsLanguages.hiIN
+                    ? 'आवाज़ सुनें (Voice Preview)'
+                    : 'Voice Preview',
+                style: const TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                TtsService.instance.speak(
+                  _previewCode == TtsLanguages.hiIN
+                      ? 'नमस्ते किसान भाई! आपकी फसल की प्रगति अच्छी है।'
+                      : 'Hello farmer! Your crop progress is looking good.',
+                  languageCode: _previewCode,
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Confirm button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                minimumSize: const Size(double.infinity, 0),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                widget.onSelected(_previewCode);
+              },
+              child: Text(
+                _previewCode == TtsLanguages.hiIN
+                    ? 'हिंदी सेट करें ✓'
+                    : 'Set English ✓',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

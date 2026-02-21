@@ -1,3 +1,5 @@
+/// Alert Details Screen
+/// Language is now controlled globally via Profile settings
 library;
 
 import '../../../services/localization/tts_service.dart';
@@ -8,7 +10,6 @@ import '../../../core/models/alert_model.dart';
 
 class AlertDetailsPage extends StatefulWidget {
   final AlertModel alert;
-
   const AlertDetailsPage({super.key, required this.alert});
 
   @override
@@ -16,7 +17,7 @@ class AlertDetailsPage extends StatefulWidget {
 }
 
 class _AlertDetailsPageState extends State<AlertDetailsPage> {
-  final String _currentLanguage = 'EN'; // EN or HI
+  // ❌ REMOVED: _currentLanguage — language now read from TtsService (set in Profile)
 
   @override
   Widget build(BuildContext context) {
@@ -29,12 +30,8 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
-          // Language Selector - FIXED with highlighted state
-          _buildLanguageSelector(),
-
-          const SizedBox(width: 8),
-
-          // Voice button
+          // ❌ REMOVED: _buildLanguageSelector() — moved to Profile Settings
+          // ✅ KEPT: Voice button — speaks in language set in Profile
           ValueListenableBuilder<bool>(
             valueListenable: TtsService.instance.isSpeaking,
             builder: (_, speaking, __) {
@@ -47,7 +44,6 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
               );
             },
           ),
-
           const SizedBox(width: 8),
         ],
       ),
@@ -55,81 +51,19 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Severity Header Card
             _buildHeaderCard(),
-
             const SizedBox(height: 20),
-
-            // Description Card
             _buildDescriptionCard(),
-
             const SizedBox(height: 16),
-
-            // What to DO Card
             _buildDoSection(),
-
             const SizedBox(height: 16),
-
-            // What NOT to DO Card
             _buildDontSection(),
-
             const SizedBox(height: 24),
-
-            // Action Buttons
             _buildActionButtons(),
-
             const SizedBox(height: 24),
           ],
         ),
       ),
-    );
-  }
-
-  // ==================== LANGUAGE SELECTOR (FIXED HIGHLIGHTING) ====================
-  Widget _buildLanguageSelector() {
-    return ValueListenableBuilder<bool>(
-      valueListenable: TtsService.instance.isSpeaking,
-      builder: (_, __, ___) {
-        final isHindi =
-            TtsService.instance.currentLanguage == TtsLanguages.hiIN;
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _showLanguageSheet();
-          },
-          child: Container(
-            margin: const EdgeInsets.only(right: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isHindi
-                  ? const Color(0xFF2E7D32).withValues(alpha: (0.15))
-                  : const Color(0xFF2E7D32).withValues(alpha: (0.1)),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isHindi
-                    ? const Color(0xFF2E7D32)
-                    : const Color(0xFF2E7D32).withValues(alpha: (0.3)),
-                width: isHindi ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.language, size: 16, color: Color(0xFF2E7D32)),
-                const SizedBox(width: 4),
-                Text(
-                  isHindi ? "HI" : "EN",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -146,8 +80,8 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: _getSeverityColor(widget.alert.severity)
-                .withValues(alpha: (0.3)),
+            color:
+                _getSeverityColor(widget.alert.severity).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -155,16 +89,15 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
       ),
       child: Column(
         children: [
-          // Icon with background circle
           Container(
             width: 90,
             height: 90,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: (0.25)),
+              color: Colors.white.withValues(alpha: 0.25),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: (0.1)),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -177,10 +110,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Title
           Text(
             widget.alert.title,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -190,17 +120,14 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
                 ),
             textAlign: TextAlign.center,
           ),
-
           const SizedBox(height: 10),
-
-          // Severity Badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: (0.3)),
+              color: Colors.white.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: Colors.white.withValues(alpha: (0.5)), width: 1.5),
+                  color: Colors.white.withValues(alpha: 0.5), width: 1.5),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -237,10 +164,10 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black.withValues(alpha: (0.08))),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: (0.04)),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -254,7 +181,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withValues(alpha: (0.1)),
+                    color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -298,11 +225,10 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: const Color(0xFF4CAF50).withValues(alpha: (0.3)),
-              width: 2),
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.3), width: 2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF4CAF50).withValues(alpha: (0.08)),
+              color: const Color(0xFF4CAF50).withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -316,7 +242,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF4CAF50).withValues(alpha: (0.15)),
+                    color: const Color(0xFF4CAF50).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -338,14 +264,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
             ),
             const SizedBox(height: 16),
             ...widget.alert.doList.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return _buildListItem(
-                context,
-                item,
-                true,
-                index + 1,
-              );
+              return _buildListItem(context, entry.value, true, entry.key + 1);
             }),
           ],
         ),
@@ -363,11 +282,10 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: const Color(0xFFF44336).withValues(alpha: (0.3)),
-              width: 2),
+              color: const Color(0xFFF44336).withValues(alpha: 0.3), width: 2),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFF44336).withValues(alpha: (0.08)),
+              color: const Color(0xFFF44336).withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -381,7 +299,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF44336).withValues(alpha: (0.15)),
+                    color: const Color(0xFFF44336).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -403,14 +321,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
             ),
             const SizedBox(height: 16),
             ...widget.alert.dontList.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return _buildListItem(
-                context,
-                item,
-                false,
-                index + 1,
-              );
+              return _buildListItem(context, entry.value, false, entry.key + 1);
             }),
           ],
         ),
@@ -418,25 +329,23 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
     );
   }
 
-  // ==================== LIST ITEM (NUMBERED) ====================
+  // ==================== LIST ITEM ====================
   Widget _buildListItem(
       BuildContext context, String text, bool isDo, int number) {
     final color = isDo ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Number badge
           Container(
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: (0.15)),
+              color: color.withValues(alpha: 0.15),
               shape: BoxShape.circle,
               border:
-                  Border.all(color: color.withValues(alpha: (0.4)), width: 1.5),
+                  Border.all(color: color.withValues(alpha: 0.4), width: 1.5),
             ),
             child: Center(
               child: Text(
@@ -449,10 +358,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
               ),
             ),
           ),
-
           const SizedBox(width: 12),
-
-          // Text
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: 3),
@@ -476,7 +382,6 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          // Primary action
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -484,8 +389,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
                 backgroundColor: const Color(0xFF2E7D32),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
                 elevation: 2,
               ),
               icon: const Icon(Icons.check_circle_outline),
@@ -500,10 +404,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
               },
             ),
           ),
-
           const SizedBox(height: 12),
-
-          // Secondary action
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -511,8 +412,7 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: const BorderSide(color: Color(0xFF2E7D32), width: 1.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
               ),
               icon: const Icon(Icons.home, color: Color(0xFF2E7D32)),
               label: const Text(
@@ -535,131 +435,27 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
     );
   }
 
-  // ==================== LANGUAGE SHEET ====================
-  void _showLanguageSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Voice Language',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
-            // English
-            _buildLanguageTile(
-              'English',
-              'Default voice',
-              'EN',
-              _currentLanguage == 'EN',
-            ),
-
-            const SizedBox(height: 12),
-
-            // Hindi
-            _buildLanguageTile(
-              'हिन्दी',
-              'Hindi voice (if installed on device)',
-              'HI',
-              _currentLanguage == 'HI',
-            ),
-
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLanguageTile(
-      String title, String subtitle, String code, bool selected) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        HapticFeedback.selectionClick();
-        TtsService.instance.setLanguage(
-          code == 'HI' ? TtsLanguages.hiIN : 'en-US',
-        );
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF2E7D32).withValues(alpha: (0.1))
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? const Color(0xFF2E7D32) : Colors.grey.shade300,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          selected ? const Color(0xFF2E7D32) : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              selected ? Icons.check_circle : Icons.circle_outlined,
-              color: selected ? const Color(0xFF2E7D32) : Colors.grey.shade400,
-              size: 26,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ==================== VOICE HELPERS ====================
+  // ==================== VOICE (uses Profile language) ====================
   Future<void> _speakAlertSummary() async {
     HapticFeedback.mediumImpact();
     final tts = TtsService.instance;
-    final lang = tts.currentLanguage;
+    final lang = tts.currentLanguage; // ← reads from Profile setting
 
-    // Build DO's and DON'Ts text
-    final doText = widget.alert.doList.join(". ");
-    final dontText = widget.alert.dontList.join(". ");
+    final doText = widget.alert.doList.join('. ');
+    final dontText = widget.alert.dontList.join('. ');
 
-    // English summary
-    final summaryEN = "${widget.alert.title}. "
-        "${widget.alert.severityText} severity alert. "
-        "${widget.alert.description}. "
-        "What to do: $doText. "
-        "What NOT to do: $dontText.";
+    final summaryEN = '${widget.alert.title}. '
+        '${widget.alert.severityText} severity alert. '
+        '${widget.alert.description}. '
+        'What to do: $doText. '
+        'What NOT to do: $dontText.';
 
-    // Hindi summary
     final severityHI = _getSeverityInHindi(widget.alert.severity);
-    final summaryHI = "${widget.alert.title}. "
-        "$severityHI गंभीरता की चेतावनी. "
-        "${widget.alert.description}. "
-        "क्या करें: $doText. "
-        "क्या न करें: $dontText.";
+    final summaryHI = '${widget.alert.title}. '
+        '$severityHI गंभीरता की चेतावनी. '
+        '${widget.alert.description}. '
+        'क्या करें: $doText. '
+        'क्या न करें: $dontText.';
 
     await tts.speak(
       lang == TtsLanguages.hiIN ? summaryHI : summaryEN,
@@ -670,17 +466,16 @@ class _AlertDetailsPageState extends State<AlertDetailsPage> {
   String _getSeverityInHindi(AlertSeverity severity) {
     switch (severity) {
       case AlertSeverity.low:
-        return "कम";
+        return 'कम';
       case AlertSeverity.medium:
-        return "मध्यम";
+        return 'मध्यम';
       case AlertSeverity.high:
-        return "उच्च";
+        return 'उच्च';
       case AlertSeverity.critical:
-        return "गंभीर";
+        return 'गंभीर';
     }
   }
 
-  // ==================== SEVERITY HELPERS ====================
   LinearGradient _getSeverityGradient(AlertSeverity severity) {
     switch (severity) {
       case AlertSeverity.low:

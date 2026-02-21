@@ -56,9 +56,6 @@ class CropDetailPage extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
-          // Language Selector - FIXED with highlighted state
-          _buildLanguageSelector(context),
-
           const SizedBox(width: 8),
 
           // Voice button with TTS integration
@@ -133,58 +130,6 @@ class CropDetailPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  // ==================== LANGUAGE SELECTOR (FIXED HIGHLIGHTING) ====================
-  Widget _buildLanguageSelector(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: TtsService.instance.isSpeaking,
-      builder: (_, __, ___) {
-        final isHindi =
-            TtsService.instance.currentLanguage == TtsLanguages.hiIN;
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _showLanguageSheet(context);
-          },
-          child: Container(
-            margin: const EdgeInsets.only(right: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isHindi
-                  ? const Color(0xFF2E7D32).withValues(alpha: (0.15))
-                  : const Color(0xFF2E7D32).withValues(alpha: (0.1)),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isHindi
-                    ? const Color(0xFF2E7D32)
-                    : const Color(0xFF2E7D32).withValues(alpha: (0.3)),
-                width: isHindi ? 2 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.language,
-                  size: 16,
-                  color: Color(0xFF2E7D32),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isHindi ? "HI" : "EN",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 13,
-                    color: Color(0xFF2E7D32),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -958,104 +903,6 @@ class CropDetailPage extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  // ==================== LANGUAGE SHEET ====================
-  void _showLanguageSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Voice Language',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildLanguageTile(
-              context,
-              'English',
-              'Default voice',
-              'en-US',
-              TtsService.instance.currentLanguage == 'en-US',
-            ),
-            const SizedBox(height: 12),
-            _buildLanguageTile(
-              context,
-              'हिन्दी',
-              'Hindi voice',
-              TtsLanguages.hiIN,
-              TtsService.instance.currentLanguage == TtsLanguages.hiIN,
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLanguageTile(
-    BuildContext context,
-    String title,
-    String subtitle,
-    String languageCode,
-    bool selected,
-  ) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        HapticFeedback.selectionClick();
-        TtsService.instance.setLanguage(languageCode);
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF2E7D32).withValues(alpha: (0.1))
-              : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? const Color(0xFF2E7D32) : Colors.grey.shade300,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          selected ? const Color(0xFF2E7D32) : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                ],
-              ),
-            ),
-            Icon(
-              selected ? Icons.check_circle : Icons.circle_outlined,
-              color: selected ? const Color(0xFF2E7D32) : Colors.grey.shade400,
-              size: 26,
-            ),
-          ],
-        ),
       ),
     );
   }
