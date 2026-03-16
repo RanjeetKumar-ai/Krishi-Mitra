@@ -2,7 +2,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/models/weather_model.dart';
 import '../../../data/dummy_data.dart';
 
@@ -285,9 +284,6 @@ class _WeatherDashboardPageState extends State<WeatherDashboardPage>
 
           const SizedBox(height: 16),
 
-          // Khet impact tips
-          _buildKhetImpactSection(context, today),
-
           const SizedBox(height: 16),
 
           // 7-day forecast horizontal scroll
@@ -444,125 +440,6 @@ class _WeatherDashboardPageState extends State<WeatherDashboardPage>
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ══════════════════ KHET IMPACT CARDS ══════════════════════════════
-
-  Widget _buildKhetImpactSection(BuildContext context, WeatherModel today) {
-    final tips = _getKhetTips(today.condition);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryGreen.withValues(alpha: (0.12)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.agriculture,
-                  color: AppColors.primaryGreen,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Aaj Khet Mein kya karein?',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 110,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: tips.length,
-            itemBuilder: (context, i) => _buildKhetTipCard(tips[i], i),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildKhetTipCard(_KhetTip tip, int index) {
-    return FadeTransition(
-      opacity: CurvedAnimation(
-        parent: _slideController,
-        curve: Interval(
-          (index * 0.1).clamp(0.0, 0.9),
-          1.0,
-          curve: Curves.easeOut,
-        ),
-      ),
-      child: Container(
-        width: 175,
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border:
-              Border.all(color: tip.color.withValues(alpha: (0.3)), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: tip.color.withValues(alpha: (0.08)),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: BoxDecoration(
-                    color: tip.color.withValues(alpha: (0.15)),
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Icon(tip.icon, color: tip.color, size: 16),
-                ),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Text(
-                    tip.title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: tip.color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 7),
-            Text(
-              tip.body,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[700],
-                height: 1.3,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -768,67 +645,6 @@ class _WeatherDashboardPageState extends State<WeatherDashboardPage>
 
   // ══════════════════ HELPERS ═════════════════════════════════════════
 
-  List<_KhetTip> _getKhetTips(String condition) {
-    if (condition.toLowerCase().contains('rain')) {
-      return [
-        _KhetTip(
-            Icons.umbrella,
-            'Khet Mein Ruko',
-            'Avoid open field work today. Heavy rain expected.',
-            const Color(0xFF1976D2)),
-        _KhetTip(
-            Icons.water_damage,
-            'Paani Nikaas',
-            'Ensure proper drainage in paddy/vegetable beds.',
-            const Color(0xFF00897B)),
-        _KhetTip(
-            Icons.pest_control,
-            'Fungal Risk',
-            'High humidity may trigger fungal diseases. Stay alert.',
-            const Color(0xFFE53935)),
-        _KhetTip(Icons.opacity, 'Sinchai Rokein',
-            'No irrigation needed today. Save water.', const Color(0xFF7B1FA2)),
-      ];
-    } else if (condition.toLowerCase().contains('sunny')) {
-      return [
-        _KhetTip(
-            Icons.wb_sunny,
-            'Khet Ready',
-            'Good day for field operations and harvesting.',
-            const Color(0xFFFB8C00)),
-        _KhetTip(
-            Icons.water_drop,
-            'Sinchai Zaruri',
-            'Hot day ahead – irrigate in evening for best results.',
-            const Color(0xFF1976D2)),
-        _KhetTip(
-            Icons.pest_control,
-            'Keet Spray',
-            'Ideal to spray pesticide in morning hours.',
-            const Color(0xFF388E3C)),
-        _KhetTip(
-            Icons.thermostat,
-            'Dhoop Se Bachao',
-            'Cover seedlings with shade nets if above 35°C.',
-            const Color(0xFFE53935)),
-      ];
-    }
-    return [
-      _KhetTip(
-          Icons.cloud,
-          'Cloudy Day',
-          'Moderate conditions. Good for transplanting seedlings.',
-          const Color(0xFF607D8B)),
-      _KhetTip(Icons.grass, 'Weeding Time',
-          'Soft soil – ideal for manual weeding.', const Color(0xFF388E3C)),
-      _KhetTip(
-          Icons.vaccines,
-          'Fertilizer',
-          'Apply fertilizer today before next rainfall.',
-          const Color(0xFFFB8C00)),
-    ];
-  }
-
   LinearGradient _getWeatherGradient(String condition) {
     if (condition.toLowerCase().contains('rain')) {
       return const LinearGradient(
@@ -891,15 +707,4 @@ class _WeatherDashboardPageState extends State<WeatherDashboardPage>
 
     debugPrint('TTS Weather Summary: $summaryEN');
   }
-}
-
-// ══════════════════ DATA CLASS ══════════════════════════════════════════
-
-class _KhetTip {
-  final IconData icon;
-  final String title;
-  final String body;
-  final Color color;
-
-  const _KhetTip(this.icon, this.title, this.body, this.color);
 }
